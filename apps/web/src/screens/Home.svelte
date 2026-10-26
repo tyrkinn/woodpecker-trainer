@@ -109,8 +109,23 @@
     await refresh();
   }
 
+  /** Подтверждение вторым тапом: первый тап «взводит» кнопку на 4 секунды. */
+  let armed = $state<string | null>(null);
+  let armTimer: ReturnType<typeof setTimeout> | undefined;
+  function arm(key: string): boolean {
+    if (armed === key) {
+      armed = null;
+      clearTimeout(armTimer);
+      return true;
+    }
+    armed = key;
+    clearTimeout(armTimer);
+    armTimer = setTimeout(() => (armed = null), 4000);
+    return false;
+  }
+
   async function remove(s: StoredSet) {
-    if (!confirm(`Удалить «${s.name}» вместе со всей историей циклов?`)) return;
+    if (!arm(`del:${s.id}`)) return;
     await deleteSet(s.id);
     await refresh();
   }
@@ -120,11 +135,22 @@
     downloadJson(`woodpecker-backup-${new Date().toISOString().slice(0, 10)}.json`, data);
   }
 
+  let pendingRestore = $state<unknown | null>(null);
+
   async function restore() {
     try {
       const raw = await pickJson();
       if (raw === null) return;
-      if (!confirm('Восстановление заменит все текущие данные на этом устройстве. Продолжить?')) return;
+      if (sets.length === 0) return applyRestore(raw);
+      pendingRestore = raw;
+    } catch (e) {
+      say(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function applyRestore(raw: unknown) {
+    pendingRestore = null;
+    try {
       const r = await importAll(raw);
       say(`Восстановлено: ${r.sets} ${plural(r.sets, 'набор', 'набора', 'наборов')}, ${r.attempts} попыток`);
       await refresh();
@@ -297,7 +323,9 @@
               <span>{s.name}</span>
               <span class="muted num">{s.puzzleIds.length} задач</span>
             </button>
-            <button class="btn quiet" aria-label="Удалить {s.name}" onclick={() => remove(s)}>Удалить</button>
+            <button class="btn quiet" class:danger={armed === `del:${s.id}`} aria-label="Удалить {s.name}" onclick={() => remove(s)}>
+              {armed === `del:${s.id}` ? 'Точно удалить?' : 'Удалить'}
+            </button>
           </li>
         {/each}
       </ul>
@@ -316,6 +344,15 @@
         <button class="btn" onclick={backup}>Сохранить бэкап</button>
         <button class="btn quiet" onclick={restore}>Восстановить</button>
       </div>
+      {#if pendingRestore !== null}
+        <div class="confirm" role="alert">
+          <p>Восстановление заменит все наборы и историю на этом устройстве.</p>
+          <div class="row">
+            <button class="btn primary" onclick={() => applyRestore(pendingRestore)}>Заменить данные</button>
+            <button class="btn quiet" onclick={() => (pendingRestore = null)}>Отмена</button>
+          </div>
+        </div>
+      {/if}
     </section>
   {/if}
 
@@ -522,6 +559,20 @@
     font-size: 0.82rem;
     white-space: pre-wrap;
     word-break: break-word;
+  }
+  .danger {
+    color: var(--crest);
+    font-weight: 650;
+  }
+  .confirm {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--crest);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+  }
+  .confirm p {
+    margin: 0 0 10px;
   }
   .backup p {
     margin: 0 0 10px;
