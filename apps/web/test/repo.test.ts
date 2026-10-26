@@ -14,7 +14,9 @@ import {
   startNextCycle,
   updateSettings,
 } from '../src/lib/repo.ts';
-import { DEMO_SET } from '../src/lib/demo.ts';
+import { BASE_SET, DEMO_SET } from '../src/lib/demo.ts';
+import { readFileSync } from 'node:fs';
+import { parseSetFile } from '@wp/core';
 
 let n = 0;
 beforeEach(() => {
@@ -32,6 +34,22 @@ describe('демо-набор', () => {
         expect(r.kind, `${p.id} ход ${i}`).toBe(i === p.moves.length - 1 ? 'solved' : 'continue');
       }
       if (p.themes.some((t) => t.startsWith('mateIn'))) expect(new Chess(s.fen).isCheckmate(), p.id).toBe(true);
+    }
+  });
+});
+
+describe('встроенный набор Lichess', () => {
+  it('id совпадает с файлом, все 400 задач проходят импорт и решаются ходами базы', () => {
+    const raw = JSON.parse(readFileSync(new URL('../public/sets/base-1300.json', import.meta.url), 'utf8'));
+    expect(raw.id).toBe(BASE_SET.id);
+    const parsed = parseSetFile(raw, 0);
+    expect(parsed.puzzles).toHaveLength(400);
+    expect(parsed.skipped).toEqual([]);
+    for (const p of parsed.puzzles) {
+      const s = new PuzzleSession(p);
+      s.playSetup();
+      for (let i = 1; i < p.moves.length; i += 2) expect(s.tryMove(p.moves[i]!).kind, p.id).not.toMatch(/wrong|illegal/);
+      expect(s.isFinished, p.id).toBe(true);
     }
   });
 });

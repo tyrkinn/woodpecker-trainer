@@ -1,5 +1,12 @@
 import type { PuzzleSetFile } from '@wp/core';
 
+/** Готовый набор из базы Lichess, лежит в public/sets и кэшируется для офлайна. */
+export const BASE_SET = {
+  id: 'set-1g53qw9op7v',
+  url: './sets/base-1300.json',
+  label: 'Набор 1300–1700 · 400 задач',
+} as const;
+
 /**
  * Встроенный мини-набор, чтобы попробовать тренажёр до генерации своего.
  * Настоящий набор делается генератором из базы Lichess.

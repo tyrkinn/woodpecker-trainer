@@ -637,7 +637,7 @@
   }
   .actions {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
     gap: 6px;
     margin-top: auto;
   }

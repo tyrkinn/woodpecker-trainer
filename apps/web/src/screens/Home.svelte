@@ -10,7 +10,7 @@
     type StoredSet,
   } from '@wp/core';
   import Tally from '../components/Tally.svelte';
-  import { DEMO_SET } from '../lib/demo.ts';
+  import { BASE_SET, DEMO_SET } from '../lib/demo.ts';
   import { downloadJson, pickJson } from '../lib/files.ts';
   import { clock, daysAgo, pct, plural } from '../lib/format.ts';
   import {
@@ -102,6 +102,23 @@
   async function loadDemo() {
     await importSet(DEMO_SET);
     await refresh();
+  }
+
+  let loadingBase = $state(false);
+  async function loadBase() {
+    if (loadingBase) return;
+    loadingBase = true;
+    try {
+      const res = await fetch(BASE_SET.url);
+      if (!res.ok) throw new Error(`Набор не загрузился: HTTP ${res.status}`);
+      const rep = await importSet(await res.json());
+      say(`Загружен «${rep.set.name}»`);
+      await refresh();
+    } catch (e) {
+      say(e instanceof Error ? e.message : String(e));
+    } finally {
+      loadingBase = false;
+    }
   }
 
   async function choose(id: string) {
@@ -208,14 +225,15 @@
     <section class="empty">
       <h2>Один набор задач, каждый круг быстрее</h2>
       <p>
-        Сгенерируй набор из базы Lichess командой ниже и импортируй JSON. Или начни с пробного набора из восьми задач, чтобы
-        посмотреть, как всё устроено.
+        Начни с готового набора: {BASE_SET.label} из базы Lichess, от простых к сложным. Свой набор под другой рейтинг
+        собирается командой ниже и импортируется JSON-файлом.
       </p>
-      <pre class="cmd">pnpm gen --seed 42 --min-rating 1300 --max-rating 1700 --count 400</pre>
       <div class="row">
-        <button class="btn primary" onclick={doImport}>Импортировать набор</button>
-        <button class="btn" onclick={loadDemo}>Пробный набор</button>
+        <button class="btn primary" onclick={loadBase} disabled={loadingBase}>{loadingBase ? 'Загружаю…' : `Взять ${BASE_SET.label}`}</button>
+        <button class="btn" onclick={doImport}>Импортировать набор</button>
+        <button class="btn quiet" onclick={loadDemo}>Пробный на 8 задач</button>
       </div>
+      <pre class="cmd">pnpm gen --seed 42 --min-rating 1300 --max-rating 1700 --count 400</pre>
       <button class="btn quiet" onclick={restore}>Восстановить из бэкапа</button>
     </section>
   {:else}
@@ -331,6 +349,9 @@
       </ul>
       <div class="row">
         <button class="btn" onclick={doImport}>Импортировать набор</button>
+        {#if !sets.some((s) => s.id === BASE_SET.id)}
+          <button class="btn" onclick={loadBase} disabled={loadingBase}>{BASE_SET.label}</button>
+        {/if}
         {#if !sets.some((s) => s.id === DEMO_SET.id)}
           <button class="btn quiet" onclick={loadDemo}>Пробный набор</button>
         {/if}

@@ -1,7 +1,7 @@
 {
   "extends": ["@tsconfig/svelte/tsconfig.json", "../../tsconfig.base.json"],
   "compilerOptions": {
-    "types": ["vite/client", "vite-plugin-pwa/client"],
+    "types": ["vite/client", "vite-plugin-pwa/client", "node"],
     "lib": ["ES2023", "DOM", "DOM.Iterable"]
   },
   "include": ["src/**/*.ts", "src/**/*.svelte", "test/**/*.ts"]
