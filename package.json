@@ -13,7 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "pnpm -r --if-present check",
-    "gen": "tsx tools/set-generator/src/cli.ts"
+    "gen": "tsx tools/set-generator"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
