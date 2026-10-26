@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import * as zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 import {
   DEFAULT_PARAMS,
   isMotif,
@@ -144,6 +145,45 @@ describe('generate: потоковый проход', () => {
       gameUrl: expect.stringContaining('lichess.org'),
     });
     expect(a.file.createdAt).toBe('2026-10-01T00:00:00.000Z');
+  });
+
+  // База Lichess — seekable zstd: каждому кадру предшествует skippable-кадр с его размером.
+  function writeSeekable(path: string) {
+    const csv = readFileSync(FIXTURE);
+    const parts: Buffer[] = [];
+    for (let i = 0; i < csv.length; i += 700) {
+      const frame = zlib.zstdCompressSync(csv.subarray(i, i + 700));
+      const skip = Buffer.alloc(12);
+      skip.writeUInt32LE(0x184d2a50, 0);
+      skip.writeUInt32LE(4, 4);
+      skip.writeUInt32LE(frame.length, 8);
+      parts.push(skip, frame);
+    }
+    writeFileSync(path, Buffer.concat(parts));
+  }
+
+  const hasZstdBin = spawnSync('zstd', ['--version'], { stdio: 'ignore' }).status === 0;
+
+  it.each([
+    ['js', true],
+    ['bin', hasZstdBin],
+  ] as const)('читает seekable .zst как у Lichess (распаковщик %s)', async (backend, available) => {
+    if (!available) return;
+    const dir = mkdtempSync(join(tmpdir(), 'wp-seek-'));
+    const file = join(dir, 'lichess_db_puzzle.csv.zst');
+    writeSeekable(file);
+    const prev = process.env.WP_ZSTD;
+    process.env.WP_ZSTD = backend;
+    try {
+      const created = new Date('2026-10-01T00:00:00Z');
+      const plain = await generate((await openSource(FIXTURE)).lines, P(), { createdAt: created });
+      const seek = await generate((await openSource(file)).lines, P(), { createdAt: created });
+      expect(seek.scanned).toBe(49);
+      expect(JSON.stringify(seek.file)).toBe(JSON.stringify(plain.file));
+    } finally {
+      if (prev === undefined) delete process.env.WP_ZSTD;
+      else process.env.WP_ZSTD = prev;
+    }
   });
 
   it('сообщает, если задач не хватило', async () => {
