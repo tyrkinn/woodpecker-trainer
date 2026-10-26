@@ -1,0 +1,17 @@
+{
+  "name": "@wp/set-generator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "bin": {
+    "wp-set-generator": "index.ts"
+  },
+  "scripts": {
+    "check": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@wp/core": "workspace:*",
+    "fzstd": "^0.1.1"
+  }
+}

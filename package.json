@@ -1,0 +1,24 @@
+{
+  "name": "woodpecker-trainer",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.9.0",
+  "engines": {
+    "node": ">=22.15"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @wp/web dev",
+    "build": "pnpm --filter @wp/web build",
+    "preview": "pnpm --filter @wp/web preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "pnpm -r --if-present check",
+    "gen": "tsx tools/set-generator/src/cli.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.0.0"
+  }
+}

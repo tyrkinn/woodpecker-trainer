@@ -1,0 +1,8 @@
+node_modules
+dist
+.vite
+*.csv.zst
+*.csv
+!tools/set-generator/test/fixtures/*.csv
+sets/*.json
+!sets/demo.json
