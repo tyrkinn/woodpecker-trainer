@@ -1,11 +1,20 @@
 import type { PuzzleSetFile } from '@wp/core';
 
-/** Готовый набор из базы Lichess, лежит в public/sets и кэшируется для офлайна. */
-export const BASE_SET = {
-  id: 'set-1g53qw9op7v',
-  url: './sets/base-1300.json',
-  label: 'Набор 1300–1700 · 400 задач',
-} as const;
+export interface BuiltinSet {
+  id: string;
+  url: string;
+  label: string;
+  hint: string;
+}
+
+/**
+ * Готовые наборы из базы Lichess (seed 42, 400 задач), лежат в public/sets и кэшируются для офлайна.
+ * Первый — основной: рейтинг задач Lichess заметно выше рейтинга партий на chess.com.
+ */
+export const BUILTIN_SETS: readonly BuiltinSet[] = [
+  { id: 'set-11s1x7bxcdc', url: './sets/base-1500.json', label: 'Набор 1500–1900', hint: 'для цели ~1700 на chess.com' },
+  { id: 'set-1g53qw9op7v', url: './sets/base-1300.json', label: 'Набор 1300–1700', hint: 'полегче' },
+];
 
 /**
  * Встроенный мини-набор, чтобы попробовать тренажёр до генерации своего.

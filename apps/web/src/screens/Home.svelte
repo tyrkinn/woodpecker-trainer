@@ -10,7 +10,7 @@
     type StoredSet,
   } from '@wp/core';
   import Tally from '../components/Tally.svelte';
-  import { BASE_SET, DEMO_SET } from '../lib/demo.ts';
+  import { BUILTIN_SETS, DEMO_SET, type BuiltinSet } from '../lib/demo.ts';
   import { downloadJson, pickJson } from '../lib/files.ts';
   import { clock, daysAgo, pct, plural } from '../lib/format.ts';
   import {
@@ -104,12 +104,12 @@
     await refresh();
   }
 
-  let loadingBase = $state(false);
-  async function loadBase() {
+  let loadingBase = $state<string | null>(null);
+  async function loadBase(b: BuiltinSet) {
     if (loadingBase) return;
-    loadingBase = true;
+    loadingBase = b.id;
     try {
-      const res = await fetch(BASE_SET.url);
+      const res = await fetch(b.url);
       if (!res.ok) throw new Error(`Набор не загрузился: HTTP ${res.status}`);
       const rep = await importSet(await res.json());
       say(`Загружен «${rep.set.name}»`);
@@ -117,7 +117,7 @@
     } catch (e) {
       say(e instanceof Error ? e.message : String(e));
     } finally {
-      loadingBase = false;
+      loadingBase = null;
     }
   }
 
@@ -225,15 +225,22 @@
     <section class="empty">
       <h2>Один набор задач, каждый круг быстрее</h2>
       <p>
-        Начни с готового набора: {BASE_SET.label} из базы Lichess, от простых к сложным. Свой набор под другой рейтинг
+        Возьми готовый набор из 400 задач Lichess, они идут от простых к сложным. Набор под другой рейтинг или темы
         собирается командой ниже и импортируется JSON-файлом.
       </p>
+      <div class="builtins">
+        {#each BUILTIN_SETS as b, i (b.id)}
+          <button class="btn builtin" class:primary={i === 0} onclick={() => loadBase(b)} disabled={loadingBase !== null}>
+            <span>{loadingBase === b.id ? 'Загружаю…' : b.label}</span>
+            <small>{b.hint}</small>
+          </button>
+        {/each}
+      </div>
       <div class="row">
-        <button class="btn primary" onclick={loadBase} disabled={loadingBase}>{loadingBase ? 'Загружаю…' : `Взять ${BASE_SET.label}`}</button>
         <button class="btn" onclick={doImport}>Импортировать набор</button>
         <button class="btn quiet" onclick={loadDemo}>Пробный на 8 задач</button>
       </div>
-      <pre class="cmd">pnpm gen --seed 42 --min-rating 1300 --max-rating 1700 --count 400</pre>
+      <pre class="cmd">pnpm gen --seed 42 --min-rating 1500 --max-rating 1900 --count 400</pre>
       <button class="btn quiet" onclick={restore}>Восстановить из бэкапа</button>
     </section>
   {:else}
@@ -349,9 +356,11 @@
       </ul>
       <div class="row">
         <button class="btn" onclick={doImport}>Импортировать набор</button>
-        {#if !sets.some((s) => s.id === BASE_SET.id)}
-          <button class="btn" onclick={loadBase} disabled={loadingBase}>{BASE_SET.label}</button>
-        {/if}
+        {#each BUILTIN_SETS.filter((b) => !sets.some((s) => s.id === b.id)) as b (b.id)}
+          <button class="btn" onclick={() => loadBase(b)} disabled={loadingBase !== null}>
+            {loadingBase === b.id ? 'Загружаю…' : b.label}
+          </button>
+        {/each}
         {#if !sets.some((s) => s.id === DEMO_SET.id)}
           <button class="btn quiet" onclick={loadDemo}>Пробный набор</button>
         {/if}
@@ -580,6 +589,22 @@
     font-size: 0.82rem;
     white-space: pre-wrap;
     word-break: break-word;
+  }
+  .builtins {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+  .builtin {
+    flex-direction: column;
+    align-items: flex-start;
+    min-height: 64px;
+    text-align: left;
+  }
+  .builtin small {
+    font-weight: 400;
+    opacity: 0.8;
   }
   .danger {
     color: var(--crest);

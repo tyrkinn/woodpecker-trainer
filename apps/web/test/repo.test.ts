@@ -14,7 +14,7 @@ import {
   startNextCycle,
   updateSettings,
 } from '../src/lib/repo.ts';
-import { BASE_SET, DEMO_SET } from '../src/lib/demo.ts';
+import { BUILTIN_SETS, DEMO_SET } from '../src/lib/demo.ts';
 import { readFileSync } from 'node:fs';
 import { parseSetFile } from '@wp/core';
 
@@ -38,10 +38,10 @@ describe('демо-набор', () => {
   });
 });
 
-describe('встроенный набор Lichess', () => {
-  it('id совпадает с файлом, все 400 задач проходят импорт и решаются ходами базы', () => {
-    const raw = JSON.parse(readFileSync(new URL('../public/sets/base-1300.json', import.meta.url), 'utf8'));
-    expect(raw.id).toBe(BASE_SET.id);
+describe('встроенные наборы Lichess', () => {
+  it.each(BUILTIN_SETS.map((b) => [b.label, b] as const))('%s: id совпадает с файлом, все 400 задач решаются ходами базы', (_l, b) => {
+    const raw = JSON.parse(readFileSync(new URL(b.url.replace('./', '../public/'), import.meta.url), 'utf8'));
+    expect(raw.id).toBe(b.id);
     const parsed = parseSetFile(raw, 0);
     expect(parsed.puzzles).toHaveLength(400);
     expect(parsed.skipped).toEqual([]);
